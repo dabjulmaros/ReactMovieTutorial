@@ -3,6 +3,9 @@ import {useState, useEffect, useRef} from 'react';
 // API
 import API from '../API';
 
+// Helper
+import { isPersistedState } from '../helpers';
+
 const initialState = {
   page:0,
   results:[],
@@ -16,8 +19,6 @@ export const useHomeFetch = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [isLoadingMore,setIsLoadingMore] = useState(false);
-
-  console.log(searchTerm)
 
   const fetchMovies = async (page, searchTerm = '') => {
     try{
@@ -39,12 +40,22 @@ export const useHomeFetch = () => {
     catch(error){
       setError(true);
     }
-
   }
 
   // Initial Render and Search
   useEffect(()=>{
+    if(!searchTerm){
+      const sessionState = isPersistedState('homeState');
+      
+      if(sessionState)
+      {
+        console.log("grabbing from storage");
+        setState(sessionState);
+        return;
+      }
+    }
     setState(initialState);
+    console.log("grabbing from API");
     fetchMovies(1,searchTerm);
   },[searchTerm]);
 
@@ -56,6 +67,15 @@ export const useHomeFetch = () => {
     setIsLoadingMore(false);
 
   },[isLoadingMore,state.page,searchTerm])
+
+  //Write to sessionStotage
+  useEffect(()=>{
+    if(!searchTerm)
+    {
+      sessionStorage.setItem('homeState',JSON.stringify(state));
+    }
+
+  },[searchTerm,state]);
 
   return {state,loading,error,setSearchTerm,searchTerm,setIsLoadingMore};
 }
